@@ -6,7 +6,7 @@ use sea_orm::Database;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    dotenvy::dotenv().expect("failed to load .env");
+    let _ = dotenvy::dotenv(); // just silently load it in, if it doesnt work then oh well
 
     let database_url = dotenvy::var("DATABASE_URL").expect("missing DATABASE_URL");
     let port: u16 = dotenvy::var("PORT")
