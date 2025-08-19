@@ -7,9 +7,10 @@ use actix_web::{
     web,
 };
 use entity::{api_key, prelude::*};
+use hmac::Mac;
 use sea_orm::{entity::*, query::*};
 
-use crate::AppState;
+use crate::{AppState, HmacSha256};
 
 pub async fn api_key_auth_middleware(
     request: ServiceRequest,
@@ -27,16 +28,23 @@ pub async fn api_key_auth_middleware(
         .map(|k| k.to_string())
         .ok_or_else(|| ErrorBadRequest("missing x-api-key"))?;
 
-    let (_, game_model) = ApiKey::find()
+    let mut hmac = HmacSha256::new_from_slice(data.hmac_key.as_bytes())
+        .map_err(|_| ErrorInternalServerError("failed to create hash object"))?;
+
+    hmac.update(header_api_key.as_bytes());
+
+    let hmac_result = hmac.finalize();
+    let key_hash_hex = hex::encode(hmac_result.into_bytes());
+
+    let game_model = ApiKey::find()
         .find_also_related(Game)
-        .filter(api_key::Column::Key.eq(header_api_key))
+        .filter(api_key::Column::KeyHash.eq(key_hash_hex))
         .one(&data.database)
         .await
         .map_err(|_| ErrorInternalServerError("unable to reach database"))?
-        .ok_or_else(|| ErrorUnauthorized("invalid api key"))?;
-
-    let game_model = game_model
-        .ok_or_else(|| ErrorInternalServerError("api key does not have a game linked to it"))?;
+        .ok_or_else(|| ErrorUnauthorized("invalid api key"))?
+        .1
+        .ok_or_else(|| ErrorInternalServerError("api key does not have a game linked to it"));
 
     request.extensions_mut().insert(game_model);
 
