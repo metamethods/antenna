@@ -9,7 +9,7 @@ async fn main() -> std::io::Result<()> {
     let _ = dotenvy::dotenv(); // just silently load it in, if it doesnt work then oh well
 
     let database_url = dotenvy::var("DATABASE_URL").expect("missing DATABASE_URL");
-    let hmac_key = dotenvy::var("hmac_key").expect("missing hmac_key");
+    let hmac_key = dotenvy::var("HMAC_KEY").expect("missing HMAC_KEY");
     let port: u16 = dotenvy::var("PORT")
         .expect("missing PORT")
         .parse::<u16>()
