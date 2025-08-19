@@ -44,7 +44,7 @@ pub async fn api_key_auth_middleware(
         .map_err(|_| ErrorInternalServerError("unable to reach database"))?
         .ok_or_else(|| ErrorUnauthorized("invalid api key"))?
         .1
-        .ok_or_else(|| ErrorInternalServerError("api key does not have a game linked to it"));
+        .ok_or_else(|| ErrorInternalServerError("api key does not have a game linked to it"))?;
 
     request.extensions_mut().insert(game_model);
 
